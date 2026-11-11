@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>내 유형에 맞춘 세무 신고 달력 (개인사업자 2027)</title>
+<link rel="canonical" href="https://secondbranch.kr/tax-calendar/">
+<meta name="description" content="개인사업자가 몇 가지 질문에 답하면 부가세·종합소득세·원천세 중 내게 해당하는 신고 기한만 정확한 날짜(요일, 휴일 이월 반영)로 보여 주고, 구글 캘린더나 .ics 파일로 알림까지 넣을 수 있습니다. 참고용입니다.">
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="top">
+  <h1>내 유형에 맞춘 세무 신고 달력</h1>
+  <p class="sub">개인사업자 · 2027년 기한 · 참고용</p>
+  <p class="lead">내 사업 유형을 고르면 내가 챙길 세금 신고 기한만 정확한 날짜로 골라 보여 주고, 휴대폰 캘린더에 알림까지 넣을 수 있습니다.</p>
+</header>
+
+<!-- 인앱 브라우저면 답하기 전, 맨 위에 보인다(답은 저장하지 않아 크롬으로 넘어가면 사라지므로) -->
+<div id="inAppBox" class="notice warn" hidden>
+  <p id="inAppFirst"></p>
+  <p id="inAppWarn"></p>
+  <p id="inAppGuide" hidden></p>
+  <p><a id="inAppIntent" class="primary big" hidden></a></p>
+  <p><button type="button" id="copyBtn" class="primary big" hidden></button></p>
+  <p id="inAppNote" class="hint" hidden></p>
+  <p id="copyStatus" role="status"></p>
+  <p><input id="copyUrl" class="copy-url" type="text" readonly aria-label="현재 주소" hidden></p>
+</div>
+
+<div id="dataError" class="error-banner" role="alert" hidden></div>
+
+<section class="card" id="questions">
+  <h2>1. 내 사업 유형 고르기</h2>
+  <p class="hint">답을 고르면 아래 달력이 바로 바뀝니다. 「모름」이 있는 질문은 모르면 모름을 고르세요(사업자 형태와 직원 여부에는 모름이 없습니다).</p>
+  <div id="questionList"></div>
+</section>
+
+<section id="blocked" class="notice" role="status" hidden></section>
+
+<main id="result" hidden>
+  <section class="notice warn" id="unknownTaxNotice" hidden></section>
+
+  <section class="notice warn" id="rangeNotice" hidden></section>
+
+  <section class="card" id="nextBox"aria-live="polite" hidden></section>
+
+  <section class="card">
+    <h2>2. 내 달력</h2>
+    <div id="calendarList"></div>
+  </section>
+
+  <section class="card" id="registerBox">
+    <h2>3. 캘린더에 넣기</h2>
+    <div id="inAppNear" hidden></div>
+    <p><button type="button" id="icsBtn" class="primary">내 달력 전체를 .ics 파일로 받기</button></p>
+    <ul id="registerNotes" class="plain"></ul>
+    <p class="hint">항목마다 「구글 캘린더에 추가」 링크도 있습니다. 매월 반복 항목은 묶음을 펼치면 회차별로 있습니다.</p>
+  </section>
+</main>
+
+<section class="card scope" id="scopeBox" hidden></section>
+
+<section class="card" id="disclaimerBox">
+  <h2>꼭 읽어 주세요</h2>
+  <ul id="disclaimerList" class="plain"></ul>
+  <p id="carryOver" class="hint"></p>
+  <p id="privacy" class="hint"></p>
+</section>
+
+<footer class="foot">
+  <p>간이과세 배제기준이 궁금하시면 <a href="https://secondbranch.kr/simple-vat-check/">간이과세 될까? (배제기준 확인 도구)</a>를 보세요.</p>
+</footer>
+
+<!-- 로컬 확인: file:// 로 열면 fetch 가 막혀 데이터를 못 읽습니다. 이 폴더에서 python -m http.server 8765 로 띄운 뒤 http://localhost:8765/ 로 여세요. -->
+<script type="module" src="app.js"></script>
+</body>
+</html>
