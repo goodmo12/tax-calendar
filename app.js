@@ -2,13 +2,13 @@
 // 주의: file:// 로 열면 fetch 가 막혀 데이터를 못 읽는다. 이 폴더에서
 //   python -m http.server 8765
 // 로 띄우고 http://localhost:8765/ 로 열 것.
-// 입력은 저장하지도 전송하지도 않는다(localStorage·쿠키·분석 없음).
+// 답(입력값)은 저장·전송하지 않는다. 방문과 버튼 사용 횟수만 익명으로 센다(쿠키 없음, visit-count.js).
 
 import { QUESTIONS, buildCalendar, toIcs, googleCalendarUrl } from "./engine.js";
 import {
   TEXT, QUESTION_META, visibleQuestions, optionsFor, sanitizeAnswers, readiness,
   showUnknownTaxTypeNotice, formatDate, dueLabel, shiftText, displayNotes, buildView, inAppEscape,
-  riskNote, groupSummaryText, inAppTexts,
+  riskNote, groupSummaryText, inAppTexts, inAppCopyUrl,
 } from "./ui-logic.js";
 
 const $ = (id) => document.getElementById(id);
@@ -24,6 +24,11 @@ function el(tag, props = {}, ...children) {
   return n;
 }
 
+// 방문 측정 모듈은 동적으로 불러온다. 막히거나 실패해도(광고 차단 등) 도구는 그대로 동작해야 한다.
+let vc = null;
+import("./visit-count.js").then((m) => { vc = m; m.trackPageview(); }).catch(() => {});
+const countEvent = (key) => { try { if (vc) vc.trackEvent(vc.EVENTS[key]); } catch { /* 측정 실패는 무시 */ } };
+let questionsDoneSent = false; // 질문 완료는 방문당 1회만 센다
 const state = { entity: null, answers: {}, rules: null, holidays: null, current: null };
 
 function showError(msg) {
@@ -115,7 +120,9 @@ function eventRow(entry, today, cls, withTitle = true) {
   if (st) row.append(el("div", { class: "shift", text: st }));
   const nb = noteBlock(ev);
   if (nb) row.append(nb);
-  row.append(el("a", { class: "gcal", href: googleCalendarUrl(ev), target: "_blank", rel: "noopener", text: "구글 캘린더에 추가" }));
+  const g = el("a", { class: "gcal", href: googleCalendarUrl(ev), target: "_blank", rel: "noopener", text: "구글 캘린더에 추가" });
+  g.addEventListener("click", () => countEvent("googleCalendar"));
+  row.append(g);
   return row;
 }
 
@@ -154,6 +161,10 @@ function render() {
   }
   $("dataError").hidden = true;
   state.current = cal;
+  if (!questionsDoneSent) {
+    questionsDoneSent = true;
+    countEvent("questionsDone");
+  }
   const view = buildView(cal.events, state.rules, new Date());
 
   const un = $("unknownTaxNotice");
@@ -199,7 +210,11 @@ function inAppNearBox() {
   const esc = currentEscape();
   if (!esc) return null;
   const box = el("div", { class: "notice warn inapp-near" }, el("p", { text: inAppTexts(esc).near }));
-  if (esc.kind === "intent") box.append(el("a", { class: "primary", href: esc.href, text: TEXT.inAppButton }));
+  if (esc.kind === "intent") {
+    const a = el("a", { class: "primary", href: esc.href, text: TEXT.inAppButton });
+    a.addEventListener("click", () => countEvent("openInChrome"));
+    box.append(a);
+  }
   return box;
 }
 
@@ -215,6 +230,7 @@ function renderInApp() {
   if (esc.kind === "intent") {
     a.textContent = TEXT.inAppButton;
     a.href = esc.href;
+    a.addEventListener("click", () => countEvent("openInChrome"));
   }
   const g = $("inAppGuide");
   g.hidden = esc.kind !== "copy";
@@ -230,12 +246,12 @@ function renderInApp() {
 async function copyUrl() {
   const s = $("copyStatus");
   try {
-    await navigator.clipboard.writeText(location.href);
+    await navigator.clipboard.writeText(inAppCopyUrl(location));
     s.textContent = TEXT.copyDone;
   } catch {
     s.textContent = TEXT.copyFail;
     const u = $("copyUrl");
-    u.value = location.href;
+    u.value = inAppCopyUrl(location);
     u.hidden = false;
     u.focus();
     u.select();
@@ -250,6 +266,7 @@ function update() {
 
 function downloadIcs() {
   if (!state.current) return;
+  countEvent("icsDownload");
   const blob = new Blob([toIcs(state.current.events)], { type: "text/calendar;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = el("a", { href: url, download: "tax-calendar-2027.ics" });

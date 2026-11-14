@@ -22,7 +22,7 @@ export const TEXT = {
   reDownloadNote: "답을 바꿔 다시 받으면 이전에 넣은 일정이 캘린더에 남을 수 있습니다. 예전에 넣은 것은 직접 지워 주세요.",
   unknownTaxTypeNotice: "사업자등록증에서 과세유형을 확인하시면 일정이 줄어듭니다. 지금은 모름이라 일반과세자·간이과세자·면세사업자 일정이 전부 나옵니다.",
   corporateNotice: "이 도구는 개인사업자용입니다. 법인사업자의 신고 일정은 이 달력에 없습니다. 국세청 안내나 세무 전문가에게 확인하세요.",
-  privacy: "이 도구는 입력한 답을 저장하거나 어디로도 보내지 않습니다. 계산은 모두 이 기기 안에서 이루어집니다.",
+  privacy: "답(입력값)은 저장하거나 보내지 않습니다. 계산은 모두 이 기기 안에서 이루어집니다. 방문과 버튼 사용 횟수만 익명으로 셉니다(쿠키 없음). 자세한 내용: https://secondbranch.kr/privacy-web.html",
   disclaimers: [
     "휴일로 기한이 미뤄지는 계산 중 다음날도 쉬는 날이라 또 미루는 연쇄 이월은 조문에 명시된 것이 아니라 통설에 따른 계산입니다.",
     "임시공휴일(정부가 따로 지정하는 휴일)은 반영하지 않았습니다. 공휴일 목록은 관보와 대조하지 않았습니다.",
@@ -255,10 +255,24 @@ export function detectPlatform(ua) {
   return "other";
 }
 
+// 인앱 -> 크롬 탈출 표식. 웹뷰와 크롬은 별개 방문자라 방문이 두 번 세지므로, 표식이 있으면 방문 측정(visit-count.js)이 방문을 건너뛴다.
+// 기존 쿼리(utm 포함)는 그대로 두고 표식만 붙인다. 이미 있으면 다시 붙이지 않는다.
+export const FROM_PARAM = "tf_from";
+export function withInAppMark(search) {
+  const s = search ?? "";
+  if (new URLSearchParams(s).has(FROM_PARAM)) return s;
+  return (s === "" || s === "?" ? "?" : s + "&") + FROM_PARAM + "=inapp";
+}
+
+// iOS 등 주소 복사용 URL(표식 포함, 해시는 버림). loc: { origin, pathname, search } (location 그대로 가능)
+export function inAppCopyUrl(loc) {
+  return loc.origin + loc.pathname + withInAppMark(loc.search);
+}
+
 // 안드로이드 크롬 intent 링크. 해시(#...)는 intent 문법과 충돌하므로 버린다.
 // loc: { host, pathname, search } (location 객체 그대로 넘겨도 됨)
 export function chromeIntentUrl(loc) {
-  return "intent://" + loc.host + loc.pathname + (loc.search ?? "") + "#Intent;scheme=https;package=com.android.chrome;end";
+  return "intent://" + loc.host + loc.pathname + withInAppMark(loc.search) + "#Intent;scheme=https;package=com.android.chrome;end";
 }
 
 // 인앱 탈출 화면 결정. 인앱이 아니면 null. 자동 이동은 하지 않고 버튼/안내만 만든다.
